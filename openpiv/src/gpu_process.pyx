@@ -186,7 +186,7 @@ def gpu_piv( np.ndarray[DTYPEi_t, ndim=2] frame_a,
         
 
 class CorrelationFunction( ):
-    def __init__(self, d_frame_a, d_frame_b, window_size, overlap, nfftx, d_shift = None):
+    def __init__(self, frame_a, frame_b, window_size, overlap, nfftx, d_shift = None):
         """A class representing a cross correlation function.
         
         NOTE: All identifiers starting with 'd_' exist on the GPU and not the CPU.
@@ -214,8 +214,14 @@ class CorrelationFunction( ):
         """
         
         ########################################################################################
-        # PARAMETERS FOR CORRELATION FUNCTION
         
+        #Have to avoid sending frameb to GPU directly, otherwise the index is wrong in spivet refinement process
+        frame_a=frame_a.astype(np.float32)
+        d_frame_a = gpuarray.to_gpu(frame_a.astype(np.float32))
+        frame_b=frame_b.astype(np.float32)
+        frame_a[:]=frame_b
+        d_frame_b=gpuarray.to_gpu(frame_a.astype(np.float32))
+        # PARAMETERS FOR CORRELATION FUNCTION
         self.shape = d_frame_a.shape
         self.window_size = np.int32(window_size)
         self.overlap = np.int32(overlap)      
@@ -985,8 +991,8 @@ def WiDIM( np.ndarray[DTYPEi_t, ndim=2] frame_a,
     cdef np.ndarray[DTYPEf_t, ndim=2] frame_b_f = frame_b.astype(np.float32)
 
     # Send images to the gpu
-    d_frame_a_f = gpuarray.to_gpu(frame_a_f)
-    d_frame_b_f = gpuarray.to_gpu(frame_b_f)
+#     d_frame_a_f = gpuarray.to_gpu(frame_a_f)
+#     d_frame_b_f = gpuarray.to_gpu(frame_b_f)
     
     #warnings.warn("deprecated", RuntimeWarning)
     if nb_iter_max <= coarse_factor:
@@ -1108,7 +1114,7 @@ def WiDIM( np.ndarray[DTYPEi_t, ndim=2] frame_a,
         d_shift[1, :Nrow[K], :Ncol[K]] = d_F[K, 0:Nrow[K], 0:Ncol[K], 7].copy().astype(np.int32) #yb=ya+dpy
         
         # Get correlation function
-        c = CorrelationFunction(d_frame_a_f, d_frame_b_f, W[K], Overlap[K], nfftx, d_shift = d_shift[:, :Nrow[K], :Ncol[K]].copy())
+        c = CorrelationFunction(frame_a, frame_b, W[K], Overlap[K], nfftx, d_shift = d_shift[:, :Nrow[K], :Ncol[K]].copy())
             
         # Get window displacement to subpixel accuracy
         i_tmp[0:Nrow[K]*Ncol[K]], j_tmp[0:Nrow[K]*Ncol[K]] = c.subpixel_peak_location()
@@ -1170,8 +1176,13 @@ def WiDIM( np.ndarray[DTYPEi_t, ndim=2] frame_a,
                                                                          div_tolerance )
                                                                          
                 # do the validation
-                d_F = initiate_validation(d_F, validation_list, d_u_mean, d_v_mean, nb_iter_max, K, Nrow, Ncol, W, Overlap, dt)
-                    
+                
+                #Xiyuan:the 3rd validation may fail during refinement
+                try:
+                    d_F = initiate_validation(d_F, validation_list, d_u_mean, d_v_mean, nb_iter_max, K, Nrow, Ncol, W, Overlap, dt)
+                except:
+                    print "Current Validation Failed. Skip to next step!\n"
+                    break;
             print "..[DONE]"
             print " "
         #end of validation
@@ -1198,8 +1209,8 @@ def WiDIM( np.ndarray[DTYPEi_t, ndim=2] frame_a,
             print "...[DONE]"
 
             # delete images from gpu memory
-            d_frame_a_f.gpudata.free()
-            d_frame_b_f.gpudata.free()
+#             d_frame_a_f.gpudata.free()
+#             d_frame_b_f.gpudata.free()
             
             # delete old correlation function
             del(c, d_F)

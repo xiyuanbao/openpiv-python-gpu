@@ -1,6 +1,7 @@
 
 [![DOI](https://zenodo.org/badge/148214993.svg)](https://zenodo.org/badge/latestdoi/148214993)
-
+# Changes in Oct 2020
+Changes have been made in Cython by Xiyuan Bao to improve the stability and quality of the PIV result with and without GPU.
 # OpenPIV Python version with GPU support
 GPU accelerated version of OpenPIV in Python. The algorithm and functions are mostly the same 
 as the CPU version. The main difference is that it runs much faster. The source code has been 
