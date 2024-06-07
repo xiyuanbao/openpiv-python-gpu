@@ -105,7 +105,7 @@ setup(  name = "OpenPIV",
         cmdclass = {'build_ext': build_ext},
         package_data = {'': package_data},
         data_files = data_files,
-        install_requires = ['scipy','numpy','cython','scikit-image >= 0.12.0','progressbar2 == 3.53.1'],
+        install_requires = ['scipy','numpy','cython','scikit-image == 0.14.5','progressbar2 == 3.53.1', 'networkx == 2.2', 'decorator == 4.4.2', 'cloudpickle == 1.3.0', 'pywavelets == 1.0.3', 'python_utils == 2.4.0'],
         classifiers = [
         # PyPI-specific version type. The number specified here is a magic constant
         # with no relation to this application's version numbering scheme. *sigh*
